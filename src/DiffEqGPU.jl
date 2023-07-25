@@ -141,23 +141,39 @@ end
 
 @kernel function discrete_condition_kernel(condition, cur, u, t, p)
     i = @index(Global, Linear)
-    @views @inbounds cur[i] = condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
+    @views @inbounds cur[i] = if eltype(p) <: Number
+        condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
+    else
+        condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[i]))
+    end
 end
 
 @kernel function discrete_affect!_kernel(affect!, cur, u, t, p)
     i = @index(Global, Linear)
-    @views @inbounds cur[i] && affect!(FakeIntegrator(u[:, i], t, p[:, i]))
+    @views @inbounds cur[i] && if eltype(p) <: Number
+        affect!(FakeIntegrator(u[:, i], t, p[:, i]))
+    else
+        affect!(FakeIntegrator(u[:, i], t, p[i]))
+    end
 end
 
 @kernel function continuous_condition_kernel(condition, out, u, t,
     p)
     i = @index(Global, Linear)
-    @views @inbounds out[i] = condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
+    @views @inbounds out[i] = if eltype(p) <: Number
+        condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
+    else
+        condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[i]))
+    end
 end
 
 @kernel function continuous_affect!_kernel(affect!, event_idx, u, t, p)
     for i in event_idx
-        @views @inbounds affect!(FakeIntegrator(u[:, i], t, p[:, i]))
+        if eltype(p) <: Number
+            @views @inbounds affect!(FakeIntegrator(u[:, i], t, p[:, i]))
+        else
+            @views @inbounds affect!(FakeIntegrator(u[:, i], t, p[i]))
+        end
     end
 end
 
@@ -193,7 +209,11 @@ end
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
-    @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    else
+        @views @inbounds jac(_W, u[:, i], p[i], t)
+    end
     @inbounds for i in eachindex(_W)
         _W[i] = gamma * _W[i]
     end
@@ -232,7 +252,11 @@ end
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
-    @views @inbounds x = jac(u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds x = jac(u[:, i], p[:, i], t)
+    else
+        @views @inbounds x = jac(u[:, i], p[i], t)
+    end
     @inbounds for j in 1:length(_W)
         _W[j] = x[j]
     end
@@ -251,7 +275,11 @@ end
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
     @inbounds jac = f[i].tgrad
-    @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    else
+        @views @inbounds jac(_W, u[:, i], p[i], t)
+    end
     @inbounds for i in 1:len
         _W[i, i] = -inv(gamma) + _W[i, i]
     end
@@ -261,7 +289,11 @@ end
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
-    @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds jac(_W, u[:, i], p[:, i], t)
+    else
+        @views @inbounds jac(_W, u[:, i], p[i], t)
+    end
     @inbounds for i in 1:len
         _W[i, i] = -inv(gamma) + _W[i, i]
     end
@@ -273,7 +305,11 @@ end
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
     @inbounds jac = f[i].tgrad
-    @views @inbounds x = jac(u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds x = jac(u[:, i], p[:, i], t)
+    else
+        @views @inbounds x = jac(u[:, i], p[i], t)
+    end
     @inbounds for j in 1:length(_W)
         _W[j] = x[j]
     end
@@ -286,7 +322,11 @@ end
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
-    @views @inbounds x = jac(u[:, i], p[:, i], t)
+    if eltype(p) <: Number
+        @views @inbounds x = jac(u[:, i], p[:, i], t)
+    else
+        @views @inbounds x = jac(u[:, i], p[i], t)
+    end
     @inbounds for j in 1:length(_W)
         _W[j] = x[j]
     end
