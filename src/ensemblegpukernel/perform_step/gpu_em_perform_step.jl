@@ -1,4 +1,4 @@
-@kernel function em_kernel(@Const(probs), _us, _ts, dt,
+@kernel function em_kernel(probs, _us, _ts, dt,
         saveat, ::Val{save_everystep}) where {save_everystep}
     i = @index(Global, Linear)
 

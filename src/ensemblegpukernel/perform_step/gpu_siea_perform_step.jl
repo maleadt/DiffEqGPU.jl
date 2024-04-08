@@ -61,7 +61,7 @@ function SIEAConstantCache(::Type{T}, ::Type{T2}) where {T, T2}
         β2, β3, δ2, δ3)
 end
 
-@kernel function siea_kernel(@Const(probs), _us, _ts, dt,
+@kernel function siea_kernel(probs, _us, _ts, dt,
         saveat, ::Val{save_everystep}) where {save_everystep}
     i = @index(Global, Linear)
 

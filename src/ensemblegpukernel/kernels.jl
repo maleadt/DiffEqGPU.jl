@@ -1,5 +1,5 @@
 
-@kernel function ode_solve_kernel(@Const(probs), alg, _us, _ts, dt, callback,
+@kernel function ode_solve_kernel(probs, alg, _us, _ts, dt, callback,
         tstops, nsteps,
         saveat, ::Val{save_everystep}) where {save_everystep}
     i = @index(Global, Linear)
@@ -51,7 +51,7 @@
     end
 end
 
-@kernel function ode_asolve_kernel(@Const(probs), alg, _us, _ts, dt, callback, tstops,
+@kernel function ode_asolve_kernel(probs, alg, _us, _ts, dt, callback, tstops,
         abstol, reltol,
         saveat,
         ::Val{save_everystep}) where {save_everystep}

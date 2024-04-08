@@ -12,9 +12,9 @@ function Adapt.adapt_structure(to, ps::ParamWrapper{P, T}) where {P, T}
         adapt(to, ps.data))
 end
 
-@kernel function gpu_kernel(f, du, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}),
-        @Const(t)) where {P, T}
+@kernel function gpu_kernel(f, du, u,
+        params::AbstractArray{ParamWrapper{P, T}},
+        t) where {P, T}
     i = @index(Global, Linear)
     @inbounds p = params[i].params
     @inbounds tspan = params[i].data
@@ -24,9 +24,9 @@ end
     end
 end
 
-@kernel function gpu_kernel_oop(f, du, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}),
-        @Const(t)) where {P, T}
+@kernel function gpu_kernel_oop(f, du, u,
+        params::AbstractArray{ParamWrapper{P, T}},
+        t) where {P, T}
     i = @index(Global, Linear)
     @inbounds p = params[i].params
     @inbounds tspan = params[i].data
@@ -37,7 +37,7 @@ end
     end
 end
 
-@kernel function gpu_kernel(f, du, @Const(u), @Const(p), @Const(t))
+@kernel function gpu_kernel(f, du, u, p, t)
     i = @index(Global, Linear)
     if eltype(p) <: Number
         @views @inbounds f(du[:, i], u[:, i], p[:, i], t)
@@ -46,7 +46,7 @@ end
     end
 end
 
-@kernel function gpu_kernel_oop(f, du, @Const(u), @Const(p), @Const(t))
+@kernel function gpu_kernel_oop(f, du, u, p, t)
     i = @index(Global, Linear)
     if eltype(p) <: Number
         @views @inbounds x = f(u[:, i], p[:, i], t)
@@ -58,9 +58,9 @@ end
     end
 end
 
-@kernel function jac_kernel(f, J, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}),
-        @Const(t)) where {P, T}
+@kernel function jac_kernel(f, J, u,
+        params::AbstractArray{ParamWrapper{P, T}},
+        t) where {P, T}
     i = @index(Global, Linear) - 1
     section = (1 + (i * size(u, 1))):((i + 1) * size(u, 1))
     @inbounds p = params[i + 1].params
@@ -72,9 +72,9 @@ end
     end
 end
 
-@kernel function jac_kernel_oop(f, J, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}),
-        @Const(t)) where {P, T}
+@kernel function jac_kernel_oop(f, J, u,
+        params::AbstractArray{ParamWrapper{P, T}},
+        t) where {P, T}
     i = @index(Global, Linear) - 1
     section = (1 + (i * size(u, 1))):((i + 1) * size(u, 1))
 
@@ -88,7 +88,7 @@ end
     end
 end
 
-@kernel function jac_kernel(f, J, @Const(u), @Const(p), @Const(t))
+@kernel function jac_kernel(f, J, u, p, t)
     i = @index(Global, Linear) - 1
     section = (1 + (i * size(u, 1))):((i + 1) * size(u, 1))
     if eltype(p) <: Number
@@ -98,7 +98,7 @@ end
     end
 end
 
-@kernel function jac_kernel_oop(f, J, @Const(u), @Const(p), @Const(t))
+@kernel function jac_kernel_oop(f, J, u, p, t)
     i = @index(Global, Linear) - 1
     section = (1 + (i * size(u, 1))):((i + 1) * size(u, 1))
     if eltype(p) <: Number
@@ -111,7 +111,7 @@ end
     end
 end
 
-@kernel function discrete_condition_kernel(condition, cur, @Const(u), @Const(t), @Const(p))
+@kernel function discrete_condition_kernel(condition, cur, u, t, p)
     i = @index(Global, Linear)
     @views @inbounds cur[i] = condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
 end
@@ -121,8 +121,8 @@ end
     @views @inbounds cur[i] && affect!(FakeIntegrator(u[:, i], t, p[:, i]))
 end
 
-@kernel function continuous_condition_kernel(condition, out, @Const(u), @Const(t),
-        @Const(p))
+@kernel function continuous_condition_kernel(condition, out, u, t,
+        p)
     i = @index(Global, Linear)
     @views @inbounds out[i] = condition(u[:, i], t, FakeIntegrator(u[:, i], t, p[:, i]))
 end
@@ -140,9 +140,9 @@ function workgroupsize(backend, n)
     min(maxthreads(backend), n)
 end
 
-@kernel function W_kernel(jac, W, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}), @Const(gamma),
-        @Const(t)) where {P, T}
+@kernel function W_kernel(jac, W, u,
+        params::AbstractArray{ParamWrapper{P, T}}, gamma,
+        t) where {P, T}
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -161,7 +161,7 @@ end
     end
 end
 
-@kernel function W_kernel(jac, W, @Const(u), @Const(p), @Const(gamma), @Const(t))
+@kernel function W_kernel(jac, W, u, p, gamma, t)
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -175,10 +175,10 @@ end
     end
 end
 
-@kernel function W_kernel_oop(jac, W, @Const(u),
-        @Const(params::AbstractArray{ParamWrapper{P, T}}),
-        @Const(gamma),
-        @Const(t)) where {P, T}
+@kernel function W_kernel_oop(jac, W, u,
+        params::AbstractArray{ParamWrapper{P, T}},
+        gamma,
+        t) where {P, T}
     i = @index(Global, Linear)
     len = size(u, 1)
 
@@ -200,7 +200,7 @@ end
     end
 end
 
-@kernel function W_kernel_oop(jac, W, @Const(u), @Const(p), @Const(gamma), @Const(t))
+@kernel function W_kernel_oop(jac, W, u, p, gamma, t)
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -217,8 +217,8 @@ end
     end
 end
 
-@kernel function Wt_kernel(f::AbstractArray{T}, W, @Const(u), @Const(p), @Const(gamma),
-        @Const(t)) where {T}
+@kernel function Wt_kernel(f::AbstractArray{T}, W, u, p, gamma,
+        t) where {T}
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -229,7 +229,7 @@ end
     end
 end
 
-@kernel function Wt_kernel(jac, W, @Const(u), @Const(p), @Const(gamma), @Const(t))
+@kernel function Wt_kernel(jac, W, u, p, gamma, t)
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -239,8 +239,8 @@ end
     end
 end
 
-@kernel function Wt_kernel_oop(f::AbstractArray{T}, W, @Const(u), @Const(p), @Const(gamma),
-        @Const(t)) where {T}
+@kernel function Wt_kernel_oop(f::AbstractArray{T}, W, u, p, gamma,
+        t) where {T}
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -254,7 +254,7 @@ end
     end
 end
 
-@kernel function Wt_kernel_oop(jac, W, @Const(u), @Const(p), @Const(gamma), @Const(t))
+@kernel function Wt_kernel_oop(jac, W, u, p, gamma, t)
     i = @index(Global, Linear)
     len = size(u, 1)
     _W = @inbounds @view(W[:, :, i])
@@ -267,8 +267,8 @@ end
     end
 end
 
-@kernel function gpu_kernel_tgrad(f::AbstractArray{T}, du, @Const(u), @Const(p),
-        @Const(t)) where {T}
+@kernel function gpu_kernel_tgrad(f::AbstractArray{T}, du, u, p,
+        t) where {T}
     i = @index(Global, Linear)
     @inbounds f = f[i].tgrad
     if eltype(p) <: Number
@@ -278,8 +278,8 @@ end
     end
 end
 
-@kernel function gpu_kernel_oop_tgrad(f::AbstractArray{T}, du, @Const(u), @Const(p),
-        @Const(t)) where {T}
+@kernel function gpu_kernel_oop_tgrad(f::AbstractArray{T}, du, u, p,
+        t) where {T}
     i = @index(Global, Linear)
     @inbounds f = f[i].tgrad
     if eltype(p) <: Number
@@ -356,7 +356,7 @@ function (p::LinSolveGPUSplitFactorize)(::Type{Val{:init}}, f, u0_prototype)
     LinSolveGPUSplitFactorize(size(u0_prototype)...)
 end
 
-@kernel function ldiv!_kernel(W, u, @Const(len), @Const(nfacts))
+@kernel function ldiv!_kernel(W, u, len, nfacts)
     i = @index(Global, Linear)
     section = (1 + ((i - 1) * len)):(i * len)
     _W = @inbounds @view(W[:, :, i])
